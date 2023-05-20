@@ -1,11 +1,8 @@
-%continue from asic_100k_13.mat
-%main(openMatrixFile('ASIC_100k.mat'))
-%splitMatrix(openMatrixFile('ASIC_100k.mat'),99340/4)
-% tempMatrix = padding(openMatrixFile('epb3.mat'), 4)
-% save(["Epb3.mat"], 'tempMatrix')
-%main(openMatrixSubFile('2cubes_1_1.mat'))
-allMatrix('CoupCons3D.mat')
-%% run through all matrices
+matrixName = ""
+allMatrix(matrixName)
+%% split one large matrix and rank each chunk
+%requires individual determination of how many to split the original matrix
+%into based on matrix size relative to 8gb
 function all = allMatrix(matrixName)
     %split matrix into 16ths
     matrix = openMatrixFile(matrixName);
@@ -194,4 +191,3 @@ function allRankings = main(matrix, name)
     fclose(fid);
 end
 
-%if there's a block that is all 0s, is it diagonal or not
