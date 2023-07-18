@@ -1,5 +1,9 @@
-matrixName = ""
-allMatrix(matrixName)
+matrixName = "";
+%allMatrix(matrixName)
+for n = 0:168
+    strcat("epb3_", num2str(n))
+    csr_matrix(strcat("epb3_", num2str(n)))
+end
 %% split one large matrix and rank each chunk
 %requires individual determination of how many to split the original matrix
 %into based on matrix size relative to 8gb
@@ -159,11 +163,90 @@ end
 %% open chunked matrix files
 %when I had to break down the matrices into more managable chunks
 function T = openMatrixSubFile(name, folder)
-    fileName = fullfile(folder, name)
-    matrix = load(fileName, 'tempMatrix')
-    T = getfield(matrix, 'tempMatrix')
-    T = cell2mat(T)
+    fileName = fullfile(folder, name);
+    matrix = load(fileName, 'tempMatrix');
+    T = getfield(matrix, 'tempMatrix');
+    T = cell2mat(T);
 end
+%% csr format
+function csr_matrix(filen)
+    dirr = strcat("/Users/nicol/Documents/sparsity/epb3/",filen)
+    %file_dir = dir('/Users/nicol/Documents/sparsity/2cubes_sphere/2cubes_sphere_2/*.mat');
+    file_dir = dir(strcat('/Users/nicol/Documents/sparsity/epb3/',filen,'/*.mat'));
+    read_dir = dirr;
+    dir_name = dirr;
+    foldername = dirr;
+%the way this file works is it breaks down a whole matrix, but what I need
+%to get out of it is just the csr portion- look for where you get offsets,
+%indices, etc, and then use my own code to iterate through the matrices I
+%have and save them in a separate folder.
+    
+        %okay so what happens is each big matrix is broken into blocks, and
+        %then each block gets a line in each file
+        %however, I kind of want one csr thing per each matrix since I
+        %broke mine down already.
+        %how I can do this is first open one file and use it to set the
+        %block width, and iterate through each of the things in the folder
+    CSR_offsets = fopen(strcat(dir_name,'/',filen,'_CSR_OFFSETS'),'w');
+    CSR_col_indices = fopen(strcat(dir_name,'/',filen,'_CSR_COL_INDICES'),'w');
+    CSR_values = fopen(strcat(dir_name,'/',filen,'_CSR_VALUES'),'w');
+    
+    for k=1:length(file_dir)
+        file_name = file_dir(k).name;
+        file_name
+
+        % ------ output (I want them to go in three files that will sit in
+        % the original folder with the uncompressed matricessss
+
+        % 2. CSR
+
+       
+        %make a separate thing to load my files!
+        %sike ust use the openmatrixsubfile thing
+        
+        %Data = load(strcat(read_dir,file_name));
+        %A = Data.Problem.A;
+        A = openMatrixSubFile(file_name, foldername);
+        A_size = size(A); % a 2x2 matrix including the dimension of A
+        % create CoperSim input files by compressing a
+        % block (C{i,j}) into different formats. one block
+        % will be writen as a single line in the correspoinding file(s)
+
+
+        %THIS IS THE ACTUAL CSR STUFF- BY BLOCK THEY MEAN
+        %WHAT THEY CREATED, BUT I WILL DIRECTLY USE THE MATRIX I HAVE
+        %I wonder if it will work without perfect sized things
+        % 2. CSR
+      
+        offset = 0;
+        block_width = A_size(1);
+        for ii = 1:block_width
+            offset = offset + nnz(A(ii,:));
+            %why are there two things in nnz
+            %oh it's because actually I do not know haha
+            fprintf(CSR_offsets,'%d ', offset); % number of nz values in a row
+            for jj = 1:block_width
+                if (A(ii,jj) ~= 0) % write all the nz values and corresponding col indices per each row
+                    fprintf(CSR_col_indices,'%d ', jj); % jj is the col index of a value
+                    fprintf(CSR_values,'%d ', 1); % C{i,j}(ii,jj)); % writie the value itself
+                end
+            end
+         end
+         fprintf(CSR_offsets,'\n');
+         fprintf(CSR_col_indices,'\n');
+         fprintf(CSR_values,'\n');
+    end
+         fclose(CSR_offsets);
+         fclose(CSR_col_indices);
+         fclose(CSR_values);
+ disp('done')
+ end
+                       
+        
+        
+
+
+       
 %% main
 %opens and ranks all matrices
 %end goal is to have something where the matrices and their corresponding
